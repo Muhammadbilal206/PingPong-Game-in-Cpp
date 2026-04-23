@@ -1,6 +1,8 @@
 #include <raylib.h>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <limits>
 
 using namespace std;
 
@@ -10,6 +12,8 @@ const int screeny = 700;
 const int singscreen_x = 700;
 const int singscreen_y = 800;
 const int singscreeny = 1000;
+const int duration = 3;
+char name[20];
 int score_player1;
 int score_player2;
 int score_ai;
@@ -28,6 +32,7 @@ Color NEONPINK = Color{255, 0, 204, 255};
 Color NEONORANGE = Color{255, 102, 0, 255};
 
 int main();
+int countdown();
 void difficulty();
 void aiplayereasy();
 void aiplayermed();
@@ -35,8 +40,11 @@ void aiplayerhard();
 void single();
 void multi();
 void Gameover();
+void aiGamewin();
 void Gamewin();
 void firsttomulti();
+void nameentry();
+void highestscore();
 
 class Ball
 {
@@ -82,6 +90,50 @@ public:
 		}
 	}
 
+	void aiUpdate(Sound s, Sound p, Sound d)
+	{
+		x += speed_x;
+		y += speed_y;
+
+		if (x + r >= GetScreenWidth() - 1 || x - r <= 1)
+		{
+			PlaySound(s);
+			speed_x *= -1;
+
+			if (x + r >= GetScreenWidth() - 1)
+			{
+				score_ai++;
+				score_player1++;
+				Reset();
+			}
+
+			else if (x - r <= 1)
+			{
+				score_player2++;
+				Reset();
+			}
+		}
+
+		if (y + r >= screen_y || y - r <= 1)
+		{
+			PlaySound(s);
+			speed_y *= -1;
+		}
+
+		if(score_ai==15)
+		{
+			PlaySound(p);
+			CloseAudioDevice();
+			aiGamewin();
+		}
+		else if(score_player2==15)
+		{
+			PlaySound(d);
+			CloseAudioDevice();
+			aiGamewin();
+		}
+	}
+
 	void Reset()
 	{
 		x = GetScreenWidth() / 2;
@@ -108,7 +160,7 @@ public:
 		DrawCircleGradient(x, y, r, BLACK, NEONPINK);
 	}
 
-	void Update(Sound s, Sound p)
+	void Update(Sound s, Sound p , char* playername)
 	{
 
 		x += speed_x;
@@ -131,13 +183,16 @@ public:
 
 			else if (y + r >= singscreen_y - 1)
 			{
+				//For score
 				ofstream Score("Score.txt",ios::app);
 				if(!Score)
 				{
-					main();
+					cout<<"Cannot open Score file";
+					return;
 				}
-				Score<<score_player1<<endl;
+				Score<<playername<<" "<<score_player1<<endl;
 				Score.close();
+
 				PlaySound(p);
 				CloseAudioDevice();
 				Gameover();
@@ -148,26 +203,6 @@ public:
 	void speed()
 	{
 		if(score_player1==10)
-		{
-			if(speed_x<0)
-			{
-				speed_x = -7;
-			}
-			else
-			{
-				speed_x = 7;
-			}
-			if(speed_y<0)
-			{
-				speed_y = -7;
-			}
-			else
-			{
-				speed_y = 7;
-			}
-		}
-
-		if(score_player1==20)
 		{
 			if(speed_x<0)
 			{
@@ -187,23 +222,43 @@ public:
 			}
 		}
 
+		if(score_player1==20)
+		{
+			if(speed_x<0)
+			{
+				speed_x = -10;
+			}
+			else
+			{
+				speed_x = 10;
+			}
+			if(speed_y<0)
+			{
+				speed_y = -10;
+			}
+			else
+			{
+				speed_y = 10;
+			}
+		}
+
 		if(score_player1==40)
 		{
 			if(speed_x<0)
 			{
-				speed_x = -9;
+				speed_x = -12;
 			}
 			else
 			{
-				speed_x = 9;
+				speed_x = 12;
 			}
 			if(speed_y<0)
 			{
-				speed_y = -9;
+				speed_y = -12;
 			}
 			else
 			{
-				speed_y = 9;
+				speed_y = 12;
 			}
 		}
 	}
@@ -251,7 +306,7 @@ public:
 
 	void Draw()
 	{
-		DrawRectangleRoundedLines(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
+		DrawRectangleRoundedLinesEx(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
 	}
 
 	void Update()
@@ -288,7 +343,7 @@ public:
 
 	void Draw()
 	{
-		DrawRectangleRoundedLines(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
+		DrawRectangleRoundedLinesEx(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
 	}
 
 	void Update()
@@ -325,7 +380,7 @@ public:
 
 	void Draw()
 	{
-		DrawRectangleRoundedLines(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
+		DrawRectangleRoundedLinesEx(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
 	}
 
 	void Update()
@@ -362,7 +417,7 @@ public:
 
 	void Draw()
 	{
-		DrawRectangleRoundedLines(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
+		DrawRectangleRoundedLinesEx(Rectangle{x, y, w, l}, 7, 2, 2, NEONBLUE);
 	}
 
 	void Update(int y_ball)
@@ -682,6 +737,11 @@ public:
 	{
 		DrawTextEx(s, "Exit", Vector2{screen_x / 4 - 40, screen_y / 4 + 74}, 25, 3, NEONRED);
 	}
+
+	void Text2(Font s)
+	{
+		DrawTextEx(s, "Exit", Vector2{screen_x / 4 - 229, screen_y / 4 + 82}, 25, 3, NEONRED);
+	}
 };
 
 Exitbut exitbut;
@@ -710,6 +770,146 @@ public:
 
 Replaybut replaybut;
 
+void highestscore(const char* file, string& highestscorer, int& maxscore)
+{
+	ifstream MScore("Score.txt");
+	if(!MScore.is_open())
+	{
+		cout<<"Cannot open Score file";
+		return;
+	}
+	maxscore = numeric_limits<int>::min();
+	highestscorer = "";
+
+	string line;
+	while(getline(MScore,line))
+	{
+		string player;
+		int score = 0;
+
+		size_t spacepos = line.find_last_of(' ');
+		if(spacepos != string::npos)
+		{
+			player = line.substr(0,spacepos);
+			score = stoi(line.substr(spacepos + 1));
+		}
+		if(score > maxscore)
+		{
+			maxscore = score;
+			highestscorer = player;
+		}
+	}
+	MScore.close();
+}
+
+void nameentry(char* playername)
+{
+	// Making Window
+
+	InitWindow(screen_x / 2, screen_y / 2, "Enter Name");
+	InitAudioDevice();
+	SetTargetFPS(60);
+
+	exitbut.x = screen_x / 4 - 250;
+	exitbut.y = screen_y / 4 + 80;
+	exitbut.w = 100;
+	exitbut.l = 30;
+
+	//Loading Addons
+	
+	Font title = LoadFont("SamuraiBlast.ttf");
+	Texture back = LoadTexture("back2.png");
+
+	int charcount = 0;
+
+	// Main menu loop
+
+	while (WindowShouldClose() == false)
+	{
+		char key = GetCharPressed();
+
+		while(key >= 'A')
+		{
+			if(key >= 'A' && key <= 'z' && charcount < 10)
+			{
+				playername[charcount] = (char)key;
+				name[charcount] = (char)key;
+				charcount++;
+				playername[charcount] = '\0';
+				name[charcount] = '\0';
+			}
+			key = GetCharPressed();
+		}
+					
+		if(IsKeyPressed(KEY_BACKSPACE) && charcount > 0)
+		{
+			charcount--;
+			playername[charcount] = '\0';
+			name[charcount] = '\0';
+		}
+
+		if(IsKeyPressed(KEY_ENTER) && charcount > 0)
+		{
+			single();
+		}
+
+		BeginDrawing();
+
+		ClearBackground(BLACK);
+
+		DrawTexture(back,0,0,WHITE);
+
+		DrawText("Enter Your Name: ",screen_x / 4 - 200, screen_y / 4 - 100, 35,NEONRED);
+
+		DrawTextEx(title,playername,Vector2{screen_x / 4 - 100, screen_y / 4 }, 35, 2, NEONWHITE);
+
+		DrawTextEx(title,"Enter to Continue",Vector2{screen_x / 4 - 10, screen_y / 4 + 60}, 15,2,NEONBLUE);
+
+		DrawTextEx(title,"OR Escape to Continue without name",Vector2{screen_x / 4 - 80, screen_y / 4 + 100}, 15,2,NEONGREEN);
+
+		exitbut.Draw();
+
+		exitbut.Text2(title);
+
+		bool MouseOverExitButton = CheckCollisionPointRec(GetMousePosition(), Rectangle{exitbut.x, exitbut.y, exitbut.w, exitbut.l});
+
+		if(MouseOverExitButton)
+		{
+			BeginBlendMode(BLEND_ADDITIVE);
+			for(int i=0;i<=2;i++)
+			{
+				Color glow=(Color){(unsigned char)255,(unsigned char)255,(unsigned char)255,(unsigned char)(100 - i * 8)};
+				exitbut.Glow(i,glow);
+			}
+		}
+
+		if (MouseOverExitButton && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+		{
+			CloseWindow();
+			main();
+		}
+
+		EndDrawing();
+	}
+	UnloadFont(title);
+	UnloadTexture(back);
+	CloseAudioDevice();
+	CloseWindow();
+}
+
+int countdown(int start, int duration)
+{
+	int elapsed = (int)GetTime() - start;
+	int time = duration - elapsed;
+
+	if(time<0)
+	{
+		time=-1;
+	}
+
+	return time;
+}
+
 void difficulty()
 {
 	// Making Window
@@ -718,8 +918,9 @@ void difficulty()
 	InitAudioDevice();
 	SetTargetFPS(60);
 
-	Font title = LoadFont("SamuraiBlast.ttf");
+	//Loading Addons
 
+	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound button = LoadSound("butound.WAV");
 	SetSoundVolume(button, 0.5f);
 	Texture back2 = LoadTexture("back.png");
@@ -753,7 +954,9 @@ void difficulty()
 
 		ClearBackground(BLACK);
 
-		DrawTexture(back2, 0, 0, NEONWHITE);
+		DrawTexture(back2, 1, 0, NEONWHITE);
+
+		DrawTextEx(title,"INSTRUCTIONS- Use \"W\" and \"S\" keys to move the paddle.",Vector2{150,screen_y - 35},30, 2, NEONYELLOW);
 
 		backball.Draw();
 
@@ -849,31 +1052,34 @@ void firsttomulti()
 	InitAudioDevice();
 	SetTargetFPS(60);
 
-	Font title = LoadFont("SamuraiBlast.ttf");
+	//Loading Addons
 
+	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound button = LoadSound("butound.WAV");
 	SetSoundVolume(button, 0.5f);
 	Texture back2 = LoadTexture("back.png");
+
+	//Reseting the scores
 
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
 
-	// Initializing for Easy button
+	// Initializing for Five button
 
 	fivebut.x = screen_x / 2 - 425;
 	fivebut.y = screen_y / 2 - 3;
 	fivebut.w = 230;
 	fivebut.l = 60;
 
-	// Initializing for Medium button
+	// Initializing for Ten button
 
 	tenbut.x = screen_x / 2 + 135;
 	tenbut.y = screen_y / 2 - 3;
 	tenbut.w = 250;
 	tenbut.l = 60;
 
-	// Initializing for Hard button
+	// Initializing for Fifteen button
 
 	fifteenbut.x = screen_x / 2 - 140;
 	fifteenbut.y = screen_y / 2 + 150;
@@ -888,7 +1094,9 @@ void firsttomulti()
 
 		ClearBackground(BLACK);
 
-		DrawTexture(back2, 0, 0, NEONWHITE);
+		DrawTexture(back2, 1, 0, NEONWHITE);
+
+		DrawTextEx(title,"INSTRUCTIONS- Use \"W and S\" AND \"Up and Down\" keys to move the paddle.",Vector2{10,screen_y - 35},30, 2, NEONRED);
 
 		backball.Draw();
 
@@ -993,6 +1201,8 @@ void Gameover()
 	InitAudioDevice();
 	SetTargetFPS(60);
 
+	//Loading Addons
+
 	Font title = LoadFont("SamuraiBlast.ttf");
 	Texture back = LoadTexture("back2.png");
 
@@ -1012,18 +1222,11 @@ void Gameover()
 
 	//Highest Score
 
-	int maxscore = 0;
-	int count = 0;
-	int a[10000];
-	ifstream RScore("Score.txt");
-	while(RScore >> a[count])
-	{
-		if(a[count]>maxscore)
-		{
-			maxscore=a[count];
-		}
-	}
-	RScore.close();
+	const char* Filename = "Score.txt";
+	string highestscorer;
+	int maxscore;
+
+	highestscore(Filename,highestscorer,maxscore);
 
 	// Main menu loop
 
@@ -1045,13 +1248,17 @@ void Gameover()
 
 		exitbut.Text(title);
 
-		DrawTextEx(title,"Your Score",Vector2{ 20, screen_y / 4 - 40}, 35,1, NEONYELLOW);
+		DrawText("Your Score: ",40, screen_y / 4 - 40, 25 , NEONYELLOW);
 
-		DrawTextEx(title,TextFormat("%i",score_player1),Vector2{95,screen_y / 4}, 40,2,NEONORANGE);
+		DrawTextEx(title,name,Vector2{50, screen_y / 4 + 5}, 30 ,2, NEONWHITE);
 
-		DrawTextEx(title,"Highest Score",Vector2{ screen_x/4 + 60, screen_y / 4 - 40}, 30,1, NEONGREEN);
+		DrawTextEx(title,TextFormat("%i",score_player1),Vector2{95,screen_y / 4 + 50}, 40,2,NEONORANGE);
 
-		DrawTextEx(title,TextFormat("%i",maxscore),Vector2{screen_x/4 + 160,screen_y / 4}, 40,2,NEONPINK);
+		DrawText("Highest Scorer: ",screen_x/4 + 80, screen_y / 4 - 40, 25, NEONGREEN);
+
+		DrawTextEx(title,TextFormat("%s",highestscorer.c_str()),Vector2{ screen_x/4 + 130, screen_y / 4 + 5}, 30,1, NEONWHITE);
+
+		DrawTextEx(title,TextFormat("%i",maxscore),Vector2{screen_x/4 + 160,screen_y / 4 + 50}, 40,2,NEONPINK);
 
 		bool MouseOverReplayButton = CheckCollisionPointRec(GetMousePosition(), Rectangle{replaybut.x, replaybut.y, replaybut.w, replaybut.l});
 
@@ -1097,6 +1304,105 @@ void Gameover()
 	CloseWindow();
 }
 
+void aiGamewin()
+{
+	// Making Window
+
+	InitWindow(screen_x / 2, screen_y / 2, "Game Won");
+	InitAudioDevice();
+	SetTargetFPS(60);
+
+	//Loading Addons
+	
+	Font title = LoadFont("SamuraiBlast.ttf");
+	Texture back = LoadTexture("back2.png");
+
+	// Initializing for Replay button
+
+	replaybut.x = screen_x / 4 - 55;
+	replaybut.y = screen_y / 4;
+	replaybut.w = 100;
+	replaybut.l = 30;
+
+	// Initializing for Exit button
+
+	exitbut.x = screen_x / 4 - 55;
+	exitbut.y = screen_y / 4 + 70;
+	exitbut.w = 100;
+	exitbut.l = 30;
+
+	// Main menu loop
+
+	while (WindowShouldClose() == false)
+	{
+		BeginDrawing();
+
+		ClearBackground(BLACK);
+
+		DrawTexture(back,0,0,WHITE);
+
+		replaybut.Draw();
+
+		replaybut.Text(title);
+
+		exitbut.Draw();
+
+		exitbut.Text(title);
+
+		if (score_player2 > score_ai)
+		{
+			DrawTextEx(title,"You Lose",Vector2 { screen_x / 4 - 62, screen_y / 4 - 105}, 25,2, NEONORANGE);
+		}
+
+		else if (score_ai > score_player2)
+		{
+			DrawTextEx(title,"You Won",Vector2 { screen_x / 4 - 62, screen_y / 4 - 105}, 25,2, NEONGREEN);
+		}
+
+		bool MouseOverReplayButton = CheckCollisionPointRec(GetMousePosition(), Rectangle{replaybut.x, replaybut.y, replaybut.w, replaybut.l});
+
+		if(MouseOverReplayButton)
+		{
+			BeginBlendMode(BLEND_ADDITIVE);
+			for(int i=0;i<=2;i++)
+			{
+				Color glow=(Color){(unsigned char)255,(unsigned char)255,(unsigned char)255,(unsigned char)(100 - i * 8)};
+				replaybut.Glow(i,glow);
+			}
+		}
+
+		if (MouseOverReplayButton && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+		{
+			CloseAudioDevice();
+			difficulty();
+		}
+
+		bool MouseOverExitButton = CheckCollisionPointRec(GetMousePosition(), Rectangle{exitbut.x, exitbut.y, exitbut.w, exitbut.l});
+
+		if(MouseOverExitButton)
+		{
+			BeginBlendMode(BLEND_ADDITIVE);
+			for(int i=0;i<=2;i++)
+			{
+				Color glow=(Color){(unsigned char)255,(unsigned char)255,(unsigned char)255,(unsigned char)(100 - i * 8)};
+				exitbut.Glow(i,glow);
+			}
+		}
+
+		if (MouseOverExitButton && IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+		{
+			CloseWindow();
+			main();
+		}
+
+		EndDrawing();
+	}
+	UnloadFont(title);
+	UnloadTexture(back);
+	CloseAudioDevice();
+	CloseWindow();
+}
+
 void Gamewin()
 {
 	// Making Window
@@ -1105,6 +1411,8 @@ void Gamewin()
 	InitAudioDevice();
 	SetTargetFPS(60);
 
+	//Loading Addons
+	
 	Font title = LoadFont("SamuraiBlast.ttf");
 	Texture back = LoadTexture("back2.png");
 
@@ -1142,12 +1450,12 @@ void Gamewin()
 
 		if (score_player1 > score_player2)
 		{
-			DrawTextEx(title,"PLAYER 1 WON",Vector2 { screen_x / 4 - 82, screen_y / 4 - 105}, 25,2, NEONWHITE);
+			DrawTextEx(title,"PLAYER 1 WON",Vector2 { screen_x / 4 - 82, screen_y / 4 - 105}, 25,2, NEONBLUE);
 		}
 
 		else if (score_player2 > score_player1)
 		{
-			DrawTextEx(title,"PLAYER 2 WON",Vector2 { screen_x / 4 - 82, screen_y / 4 - 105}, 25,2, NEONWHITE);
+			DrawTextEx(title,"PLAYER 2 WON",Vector2 { screen_x / 4 - 82, screen_y / 4 - 105}, 25,2, NEONBLUE);
 		}
 
 		bool MouseOverReplayButton = CheckCollisionPointRec(GetMousePosition(), Rectangle{replaybut.x, replaybut.y, replaybut.w, replaybut.l});
@@ -1196,6 +1504,8 @@ void Gamewin()
 
 void aiplayereasy()
 {
+	//Reseting the score
+
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
@@ -1212,7 +1522,7 @@ void aiplayereasy()
 
 	paddle.l = 100;
 	paddle.w = 20;
-	paddle.x = 8;
+	paddle.x = 12;
 	paddle.y = (screen_y / 2) - (paddle.l / 2);
 	paddle.speed = 8;
 
@@ -1220,7 +1530,7 @@ void aiplayereasy()
 
 	ai.l = 100;
 	ai.w = 20;
-	ai.x = screen_x - (ai.w + 8);
+	ai.x = screen_x - (ai.w + 12);
 	ai.y = (screen_y / 2) - (ai.l / 2);
 	ai.speed = 4;
 
@@ -1230,11 +1540,17 @@ void aiplayereasy()
 	InitAudioDevice();
 	SetTargetFPS(60);
 
-	Font title = LoadFont("SamuraiBlast.ttf");
+	//Loading Addons
+	
+	bool gamestarted=false;
+	int start = (int)GetTime();
 
+	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound ping = LoadSound("sound_1.WAV");
 	Sound ping2 = LoadSound("sound_2.WAV");
 	Sound s_udwall = LoadSound("walls.WAV");
+	Sound win = LoadSound("wingame.WAV");
+	Sound lose = LoadSound("Gameover.WAV");
 
 	SetSoundVolume(ping, 0.1f);
 	SetSoundVolume(ping2, 0.1f);
@@ -1245,11 +1561,31 @@ void aiplayereasy()
 	while (WindowShouldClose() == false)
 	{
 
+		int time = countdown(start, duration);
+		if(time == -1 && !gamestarted)
+		{
+			gamestarted=true;
+		}
+
 		BeginDrawing();
 
 		// Drawing
 
 		ClearBackground(BLACK);
+
+		if(!gamestarted)
+		{
+			if(time>0)
+			{
+				DrawTextEx(title,TextFormat("%d",time),Vector2{screen_x/2 - 50,screen_y/2 - 50},200,8,NEONRED);
+			}
+			else
+			{
+				DrawTextEx(title,"GO!",Vector2{screen_x/2-150,screen_y/2-50},200,8,NEONGREEN);
+			}
+		}
+		else
+		{
 
 		DrawCircleLines(screen_x / 2, screen_y / 2, 200, NEONPURPLE);
 
@@ -1281,7 +1617,7 @@ void aiplayereasy()
 
 		paddle.Update();
 
-		ball.Update(s_udwall);
+		ball.aiUpdate(s_udwall,win,lose);
 
 		ai.Update(ball.y);
 
@@ -1298,6 +1634,7 @@ void aiplayereasy()
 			PlaySound(ping2);
 			ball.speed_x *= -1;
 		}
+		}
 
 		EndDrawing();
 	}
@@ -1305,6 +1642,8 @@ void aiplayereasy()
 	UnloadSound(ping2);
 	UnloadSound(s_udwall);
 	UnloadFont(title);
+	UnloadSound(win);
+	UnloadSound(lose);
 
 	CloseAudioDevice();
 	CloseWindow();
@@ -1313,6 +1652,8 @@ void aiplayereasy()
 
 void aiplayermed()
 {
+	//Reseting the score
+
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
@@ -1329,7 +1670,7 @@ void aiplayermed()
 
 	paddle.l = 80;
 	paddle.w = 20;
-	paddle.x = 8;
+	paddle.x = 12;
 	paddle.y = (screen_y / 2) - (paddle.l / 2);
 	paddle.speed = 8;
 
@@ -1337,7 +1678,7 @@ void aiplayermed()
 
 	ai.l = 80;
 	ai.w = 20;
-	ai.x = screen_x - (ai.w + 8);
+	ai.x = screen_x - (ai.w + 12);
 	ai.y = (screen_y / 2) - (ai.l / 2);
 	ai.speed = 6;
 
@@ -1347,11 +1688,17 @@ void aiplayermed()
 	InitAudioDevice();
 	SetTargetFPS(90);
 
-	Font title = LoadFont("SamuraiBlast.ttf");
+	//Loading Addons
+	
+	bool gamestarted=false;
+	int start = (int)GetTime();
 
+	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound ping = LoadSound("sound_1.WAV");
 	Sound ping2 = LoadSound("sound_2.WAV");
 	Sound s_udwall = LoadSound("walls.WAV");
+	Sound win = LoadSound("wingame.WAV");
+	Sound lose = LoadSound("Gameover.WAV");
 
 	SetSoundVolume(ping, 0.1f);
 	SetSoundVolume(ping2, 0.1f);
@@ -1362,11 +1709,31 @@ void aiplayermed()
 	while (WindowShouldClose() == false)
 	{
 
+		int time = countdown(start, duration);
+		if(time == -1 && !gamestarted)
+		{
+			gamestarted=true;
+		}
+
 		BeginDrawing();
 
 		// Drawing
 
 		ClearBackground(BLACK);
+
+		if(!gamestarted)
+		{
+			if(time>0)
+			{
+				DrawTextEx(title,TextFormat("%d",time),Vector2{screen_x/2 - 50,screen_y/2 - 50},200,8,NEONRED);
+			}
+			else
+			{
+				DrawTextEx(title,"GO!",Vector2{screen_x/2-150,screen_y/2-50},200,8,NEONGREEN);
+			}
+		}
+		else
+		{
 
 		DrawCircleLines(screen_x / 2, screen_y / 2, 200, NEONPURPLE);
 
@@ -1398,7 +1765,7 @@ void aiplayermed()
 
 		paddle.Update();
 
-		ball.Update(s_udwall);
+		ball.aiUpdate(s_udwall,win,lose);
 
 		ai.Update(ball.y);
 
@@ -1415,6 +1782,7 @@ void aiplayermed()
 			PlaySound(ping2);
 			ball.speed_x *= -1;
 		}
+		}
 
 		EndDrawing();
 	}
@@ -1422,6 +1790,8 @@ void aiplayermed()
 	UnloadSound(ping2);
 	UnloadSound(s_udwall);
 	UnloadFont(title);
+	UnloadSound(win);
+	UnloadSound(lose);
 
 	CloseAudioDevice();
 	CloseWindow();
@@ -1430,6 +1800,8 @@ void aiplayermed()
 
 void aiplayerhard()
 {
+	//Reseting the score
+
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
@@ -1446,7 +1818,7 @@ void aiplayerhard()
 
 	paddle.l = 60;
 	paddle.w = 20;
-	paddle.x = 8;
+	paddle.x = 12;
 	paddle.y = (screen_y / 2) - (paddle.l / 2);
 	paddle.speed = 8;
 
@@ -1454,7 +1826,7 @@ void aiplayerhard()
 
 	ai.l = 60;
 	ai.w = 20;
-	ai.x = screen_x - (ai.w + 8);
+	ai.x = screen_x - (ai.w + 12);
 	ai.y = (screen_y / 2) - (ai.l / 2);
 	ai.speed = 8;
 
@@ -1464,11 +1836,17 @@ void aiplayerhard()
 	InitAudioDevice();
 	SetTargetFPS(120);
 
-	Font title = LoadFont("SamuraiBlast.ttf");
+	//Loading Addons
 
+	bool gamestarted=false;
+	int start = (int)GetTime();
+
+	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound ping = LoadSound("sound_1.WAV");
 	Sound ping2 = LoadSound("sound_2.WAV");
 	Sound s_udwall = LoadSound("walls.WAV");
+	Sound win = LoadSound("wingame.WAV");
+	Sound lose = LoadSound("Gameover.WAV");
 
 	SetSoundVolume(ping, 0.1f);
 	SetSoundVolume(ping2, 0.1f);
@@ -1479,11 +1857,31 @@ void aiplayerhard()
 	while (WindowShouldClose() == false)
 	{
 
+		int time = countdown(start, duration);
+		if(time == -1 && !gamestarted)
+		{
+			gamestarted=true;
+		}
+
 		BeginDrawing();
 
 		// Drawing
 
 		ClearBackground(BLACK);
+
+		if(!gamestarted)
+		{
+			if(time>0)
+			{
+				DrawTextEx(title,TextFormat("%d",time),Vector2{screen_x/2 - 50,screen_y/2 - 50},200,8,NEONRED);
+			}
+			else
+			{
+				DrawTextEx(title,"GO!",Vector2{screen_x/2-150,screen_y/2-50},200,8,NEONGREEN);
+			}
+		}
+		else
+		{
 
 		DrawCircleLines(screen_x / 2, screen_y / 2, 200, NEONPURPLE);
 
@@ -1515,7 +1913,7 @@ void aiplayerhard()
 
 		paddle.Update();
 
-		ball.Update(s_udwall);
+		ball.aiUpdate(s_udwall,win,lose);
 
 		ai.Update(ball.y);
 
@@ -1532,6 +1930,7 @@ void aiplayerhard()
 			PlaySound(ping2);
 			ball.speed_x *= -1;
 		}
+		}
 
 		EndDrawing();
 	}
@@ -1539,6 +1938,8 @@ void aiplayerhard()
 	UnloadSound(ping2);
 	UnloadSound(s_udwall);
 	UnloadFont(title);
+	UnloadSound(win);
+	UnloadSound(lose);
 
 	CloseAudioDevice();
 	CloseWindow();
@@ -1547,6 +1948,8 @@ void aiplayerhard()
 
 void single()
 {
+	//Reseting the score
+	
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
@@ -1563,13 +1966,9 @@ void single()
 
 	singpaddle.w = 100;
 	singpaddle.l = 20;
-	singpaddle.y = singscreen_y - 24;
+	singpaddle.y = singscreen_y - 30;
 	singpaddle.x = (singscreen_x / 2) - (singpaddle.w / 2);
 	singpaddle.speed = 8;
-
-	score_ai = 0;
-	score_player1 = 0;
-	score_player2 = 0;
 
 	// Making Window
 
@@ -1577,8 +1976,11 @@ void single()
 	InitAudioDevice();
 	SetTargetFPS(60);
 
-	Font title = LoadFont("SamuraiBlast.ttf");
+	//Loading Addons
+	bool gamestarted=false;
+	int start = (int)GetTime();
 
+	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound ping = LoadSound("sound_1.WAV");
 	Sound ping2 = LoadSound("sound_2.WAV");
 	Sound s_udwall = LoadSound("walls.WAV");
@@ -1593,11 +1995,33 @@ void single()
 
 	while (WindowShouldClose() == false)
 	{
+
 		BeginDrawing();
 
 		// Drawing
 
+		int time = countdown(start, duration);
+		if(time == -1 && !gamestarted)
+		{
+			gamestarted=true;
+		}
+
 		ClearBackground(BLACK);
+
+		if(!gamestarted)
+		{
+			if(time>0)
+			{
+				DrawTextEx(title,TextFormat("%d",time),Vector2{singscreen_x/2 - 50,singscreen_y/2 - 50},200,8,NEONRED);
+			}
+			else
+			{
+				DrawTextEx(title,"GO!",Vector2{singscreen_x/2-150,singscreen_y/2-50},200,8,NEONGREEN);
+			}
+			DrawText("Use \"<\" and \">\" keys to move the paddle.",50,singscreen_y-100,30,NEONWHITE);
+		}
+		else
+		{
 
 		DrawCircleLines(singscreen_x / 2, singscreen_y / 2, 200, NEONPURPLE);
 
@@ -1623,7 +2047,7 @@ void single()
 
 		singpaddle.Update();
 
-		singball.Update(s_udwall, lose);
+		singball.Update(s_udwall, lose, name);
 
 		singball.speed();
 
@@ -1634,9 +2058,10 @@ void single()
 			PlaySound(ping);
 			singball.speed_y *= -1;
 		}
+		}
 
 		EndDrawing();
-	}
+		}
 	UnloadSound(ping);
 	UnloadSound(ping2);
 	UnloadSound(s_udwall);
@@ -1650,6 +2075,8 @@ void single()
 
 void multi()
 {
+	//Reseting the score
+
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
@@ -1666,7 +2093,7 @@ void multi()
 
 	paddle.l = 80;
 	paddle.w = 20;
-	paddle.x = 8;
+	paddle.x = 12;
 	paddle.y = (screen_y / 2) - (paddle.l / 2);
 	paddle.speed = 7;
 
@@ -1674,7 +2101,7 @@ void multi()
 
 	paddle2.l = 80;
 	paddle2.w = 20;
-	paddle2.x = screen_x - (paddle2.w + 8);
+	paddle2.x = screen_x - (paddle2.w + 12);
 	paddle2.y = (screen_y / 2) - (paddle.l / 2);
 	paddle2.speed = 7;
 
@@ -1682,10 +2109,14 @@ void multi()
 
 	InitWindow(screen_x, screeny, "Multiplayer");
 	InitAudioDevice();
-	SetTargetFPS(60);
+	SetTargetFPS(100);
+
+	//Loading Addons
+
+	bool gamestarted=false;
+	int start = (int)GetTime();
 
 	Font title = LoadFont("SamuraiBlast.ttf");
-
 	Sound ping = LoadSound("sound_1.WAV");
 	Sound ping2 = LoadSound("sound_2.WAV");
 	Sound s_udwall = LoadSound("walls.WAV");
@@ -1700,11 +2131,32 @@ void multi()
 
 	while (WindowShouldClose() == false)
 	{
+
+		int time = countdown(start, duration);
+		if(time == -1 && !gamestarted)
+		{
+			gamestarted=true;
+		}
+
 		BeginDrawing();
 
 		// Drawing
 
 		ClearBackground(BLACK);
+
+		if(!gamestarted)
+		{
+			if(time>0)
+			{
+				DrawTextEx(title,TextFormat("%d",time),Vector2{screen_x/2 - 50,screen_y/2 - 50},200,8,NEONRED);
+			}
+			else
+			{
+				DrawTextEx(title,"GO!",Vector2{screen_x/2-150,screen_y/2-50},200,8,NEONGREEN);
+			}
+		}
+		else
+		{
 
 		DrawRectangleLines(0, 100, 100, 400, NEONORANGE);
 
@@ -1759,6 +2211,7 @@ void multi()
 			{
 				PlaySound(win);
 				CloseAudioDevice();
+				CloseWindow();
 				Gamewin();
 			}
 		}
@@ -1768,6 +2221,7 @@ void multi()
 			{
 				PlaySound(win);
 				CloseAudioDevice();
+				CloseWindow();
 				Gamewin();
 			}
 		}
@@ -1778,8 +2232,10 @@ void multi()
 			{
 				PlaySound(win);
 				CloseAudioDevice();
+				CloseWindow();
 				Gamewin();
 			}
+		}
 		}
 
 		EndDrawing();
@@ -1798,13 +2254,17 @@ int main()
 {
 	// Making Window
 
-	InitWindow(screen_x, screen_y, "BOING BOING BATTLE");
+	InitWindow(screen_x, screen_y, "NEON BOUNCE");
 	InitAudioDevice();
 	SetTargetFPS(60);
+
+	//Reseting the score
 
 	score_ai = 0;
 	score_player1 = 0;
 	score_player2 = 0;
+
+	//Loading Addons
 
 	Font title = LoadFont("SamuraiBlast.ttf");
 	Sound button = LoadSound("butound.WAV");
@@ -1832,13 +2292,15 @@ int main()
 	multibut.w = 330;
 	multibut.l = 75;
 
-	//Initialzing for Baackground effects
+	//Initialzing for Background effects
 
 	backball.x=screen_x/2 - 135;
 	backball.y=screen_y/2 + 150;
 	backball.r=15;
 	backball.speed_x=5;
 	backball.speed_y=5;
+
+	char playername[10] = "";
 
 	// Main menu loop
 
@@ -1848,7 +2310,7 @@ int main()
 
 		ClearBackground(BLACK);
 
-		DrawTexture(back, 0, 0, NEONWHITE);
+		DrawTexture(back, 0, 2, NEONWHITE);
 
 		backball.Draw();
 
@@ -1903,7 +2365,7 @@ int main()
 		{
 			PlaySound(button);
 			CloseAudioDevice();
-			single();
+			nameentry(playername);
 			score_ai = 0;
 			score_player1 = 0;
 			score_player2 = 0;
@@ -1926,9 +2388,6 @@ int main()
 			PlaySound(button);
 			CloseAudioDevice();
 			firsttomulti();
-			score_ai = 0;
-			score_player1 = 0;
-			score_player2 = 0;
 		}
 
 		EndDrawing();
